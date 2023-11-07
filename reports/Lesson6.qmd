@@ -72,6 +72,7 @@ Pipeline 2: is called once per species AND island, each unique member of every g
 ## group_by-summarize w error
 
 ```{r}
+#| eval: false
 set.seed(12345)
 penguins2 <- penguins %>% 
   drop_na(sex) %>% 
@@ -156,6 +157,8 @@ ggplot(data = penguins) +
 
 **Q12:** What function would you use to customize the y-axis? Use that function to expand the y-axis limits to include 150 and 250.
 
+**Q13:** Look up the help for `scale_color_brewer()`. Change the color scale to use the \"Dark2\" color palette.
+
 ```{r}
 #From the plot above...
 ggplot(data = penguins) +
@@ -180,5 +183,3 @@ ggplot(data = penguins) +
   # color aesthetic, manual scale
   scale_color_brewer(palette = "Dark2")
 ```
-
-**Q13:** Look up the help for `scale_color_brewer()`. Change the color scale to use the \"Dark2\" color palette.
