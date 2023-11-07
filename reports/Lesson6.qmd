@@ -1,0 +1,184 @@
+---
+title: "BIOE 215 Week6"
+format: html
+editor: visual
+---
+
+## browser()
+
+Browser lets you see the world as the function sees it. When you call browser () it allows you to pause the execution of a function so that you can poke around in it.
+
+```{r}
+library(palmerpenguins)
+library(tidyverse)
+
+traits_r2 <- function(trait1, trait2) {
+  #browser()
+  summary(lm(trait1 ~ trait2))$r.squared
+}
+
+penguins %>% 
+  summarise(flipper_bill_r2 = traits_r2
+            (flipper_length_mm, bill_length_mm))
+```
+
+**Q1:** How would you describe the error? I'm not asking you describe the *cause* of the error yet. Describe how the output is different than what you would expect.
+
+Well we have an empty data frame. We expected to get a tibble with the r\^2 value for the lm of trait1 and trait 2.
+
+**Q2:** Where would you add `browser()` to explore the cause of the error?
+
+I would put browser() after I define my function, after the first open curly bracket. This is because browser() is a function and needs inputs.
+
+**Q3:** Does the body of `traits_r2` use list or atomic vector indexing? Does it use indexing by position, logic, or name?
+
+Summary is followed by a \$ it is list indexing by name.
+
+**Q4:** What's the cause of the error? How would you fix it?
+
+Yes there's a typo. There's a . missing in rsquared. It should be r.squared. Run this in browser: names(summary(lm(trait1 \~ trait2)))
+
+## Adding `group_by()`
+
+```{r}
+# Pipeline 1
+penguins %>% 
+  group_by(species) %>% 
+  summarize(flipper_bill_r2 = traits_r2(flipper_length_mm, bill_length_mm))
+
+# Pipeline 2
+penguins %>% 
+  group_by(species, island) %>% 
+  summarize(flipper_bill_r2 = traits_r2(flipper_length_mm, bill_length_mm),
+            .groups = "drop")
+
+# Pipeline 3
+penguins %>% 
+  group_by(species, island, sex) %>% 
+  summarize(flipper_bill_r2 = traits_r2(flipper_length_mm, bill_length_mm),
+            .groups = "drop")
+```
+
+**Q5:** How many times does Pipeline 1 call `traits_r2()`? How about Pipeline 2?
+
+Pipeline 1: is called once per species so 3 times
+
+Pipeline 2: is called once per species AND island, each unique member of every group in `group_by()`. So it is getting called 5 times in pipeline2.
+
+**Q6:** Create Pipeline 3 that additionally groups by sex. How many times does Pipeline 3 call `traits_r2()`?
+
+13 times!
+
+## group_by-summarize w error
+
+```{r}
+set.seed(12345)
+penguins2 <- penguins %>% 
+  drop_na(sex) %>% 
+  sample_n(25) 
+penguins2[7, 3:6] <- NA
+
+traits_r2 <- function(trait1, trait2) {
+  browser()
+  summary(lm(trait1 ~ trait2))$r.squared
+}
+
+penguins2 %>% 
+  group_by(species, island, sex) %>% 
+  summarize(flipper_bill_r2 = traits_r2(flipper_length_mm, bill_length_mm),
+            .groups = "drop")
+```
+
+**Q7:** How would you describe the error?
+
+I got an error and it stopped. I was expecting a similar tibble to pipeline 3 above with about 13 rows of data grouped by species, island, and sex with the r-squared value for each entry.
+
+**Q8:** Use `browser()` to diagnose the error. Hint: `c` will tell the debugger to continue until the next time it's called.
+
+Group 6 does not exist.
+
+**Q9:** How would you fix the error?
+
+drop_na
+
+# **Visualizing data with `ggplot()`**
+
+`ggplot()` has four major components:
+
+-   Data
+
+-   Scales
+
+-   Geometries
+
+-   Aesthetics
+
+```{r}
+library(palmerpenguins)
+library(tidyverse)
+
+ggplot(data = penguins, aes(x = body_mass_g, y = flipper_length_mm)) +
+  geom_point()
+
+head(penguins)
+```
+
+Change the aesthetic to show the relationship with bill_depth_mm and set the color to be by species.
+
+```{r}
+ggplot(data = penguins, aes(x = body_mass_g, y = bill_depth_mm, color = species)) +
+  geom_point(aes(color = species))
+```
+
+## Customizing scales
+
+```{r}
+ggplot(data = penguins) +
+  # You can also define aesthetics directly inside the geometries
+  geom_point(aes(x = body_mass_g, 
+                 y = flipper_length_mm,
+                 color = species)) +
+  # x aesthetic, continuous scale
+  scale_x_continuous(
+    # change the axis name
+    name = "Body mass (g)",
+    # change the limits
+    limits = c(2000, 8000)
+  ) +
+  # color aesthetic, manual scale
+  scale_color_manual(
+    # set the values for the colors
+    values = c(Adelie = "cornflowerblue",
+               Chinstrap = "firebrick",
+               Gentoo = "darkorchid")
+  )
+```
+
+**Q12:** What function would you use to customize the y-axis? Use that function to expand the y-axis limits to include 150 and 250.
+
+```{r}
+#From the plot above...
+ggplot(data = penguins) +
+  # You can also define aesthetics directly inside the geometries
+  geom_point(aes(x = body_mass_g, 
+                 y = flipper_length_mm,
+                 color = species)) +
+  # x aesthetic, continuous scale
+  scale_x_continuous(
+    # change the axis name
+    name = "Body mass (g)",
+    # change the limits
+    limits = c(2000, 8000)
+  ) +
+  # changing the y-axis
+  scale_y_continuous(
+    # change the axis name
+    name = "Flipper length (mm)",
+    # change the limits
+    limits = c(150, 250)
+  ) + 
+  # color aesthetic, manual scale
+  scale_color_brewer(palette = "Dark2")
+```
+
+**Q13:** Look up the help for `scale_color_brewer()`. Change the color scale to use the \"Dark2\" color palette.
